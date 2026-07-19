@@ -1,0 +1,696 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.5, user-scalable=yes">
+    <title>Мой трекер</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+<div class="container">
+    <!-- Плавающий HP-бейдж строгого режима — виден на любой вкладке.
+         Клик разворачивает подробности (дата начала, серия, выходные),
+         чтобы не занимать место текстом, пока пользователь не захочет его увидеть. -->
+    <div class="global-hp-badge" id="globalHpBadge" style="display:none;" title="Нажми для подробностей">
+        <span class="icon">❤️</span>
+        <span id="globalHpBadgeText">-/-</span>
+        <div class="global-hp-badge-track"><div class="global-hp-badge-fill" id="globalHpBadgeFill"></div></div>
+    </div>
+    <div class="global-hp-popover" id="globalHpPopover" style="display:none;">
+        <div class="ghp-row">🔥 Строгий режим с <strong class="highlight" id="ghpStartDate">-</strong></div>
+        <div class="ghp-row">🏆 Серия: <strong class="highlight" id="ghpStreak">0</strong> дней</div>
+        <div class="ghp-row">🗓️ Осталось выходных: <strong class="highlight" id="ghpRestLeft">-</strong></div>
+        <button class="btn-sm blue" id="ghpGoToSportBtn" style="width:100%;margin-top:8px;">💪 К упражнениям</button>
+        <button class="btn-sm" id="ghpHeartsInfoBtn" style="width:100%;margin-top:6px;">💗 Как устроены сердца?</button>
+    </div>
+
+    <!-- Уведомление о повышении уровня -->
+    <div class="level-up-notification" id="levelUpNotification">
+        <span class="big-icon">🎉</span>
+        <h2>⭐ Уровень повышен!</h2>
+        <div class="sub" id="levelUpText">Ты достиг уровня <strong id="levelUpNumber">2</strong>!</div>
+        <div class="reward" id="levelUpReward">❤️ +2 к здоровью</div>
+        <button class="close-btn" onclick="closeLevelUp()">🔥 Продолжить</button>
+    </div>
+
+    <div class="header">
+        <h1>📊 Мой трекер</h1>
+        <div class="header-right">
+            <span class="header-date" id="headerDate"></span>
+            <span class="mode-indicator easy header-mode-indicator" id="headerModeIndicator" title="Текущий режим сложности">😊 Лёгкий</span>
+            <button class="icon-btn" id="settingsOpenBtn" title="Настройки" aria-label="Настройки">⚙️</button>
+        </div>
+    </div>
+
+    <button class="tab-btn-profile active" data-tab="profile"><span class="icon">👤</span><span>Профиль</span></button>
+    <div class="tabs" id="tabsGrid">
+        <button class="tab-btn" data-tab="habits"><span class="icon">🔄</span>Привычки</button>
+        <button class="tab-btn" data-tab="sport"><span class="icon">💪</span>Спорт</button>
+        <button class="tab-btn" data-tab="achievements"><span class="icon">🏆</span>Успехи</button>
+        <button class="tab-btn" data-tab="notes"><span class="icon">📝</span>Заметки</button>
+        <button class="tab-btn" data-tab="todo"><span class="icon">✅</span>Дела</button>
+        <button class="tab-btn" data-tab="shop"><span class="icon">🛒</span>Магазин</button>
+    </div>
+
+    <!-- ===== ПРИВЫЧКИ ===== -->
+    <div id="habits" class="section">
+        <div class="card">
+            <div class="card-header">
+                <span class="card-title">📋 Мои привычки</span>
+                <div style="display:flex;gap:6px;flex-wrap:wrap;">
+                    <button class="btn-sm blue" id="hSelectAllBtn">✅ Выбрать все</button>
+                    <button class="btn-sm" id="hDeselectAllBtn">✖ Снять выбор</button>
+                </div>
+            </div>
+            <input type="text" class="list-search" id="hSearchInput" placeholder="🔎 Найти привычку...">
+            <div class="habit-list-container" id="hList"></div>
+            <div class="input-group">
+                <input type="text" id="hInput" placeholder="Название привычки...">
+                <input type="date" id="hStartDate" max="">
+                <input type="time" id="hStartTime" value="00:00">
+                <button class="btn-primary" id="hAddBtn">➕ Добавить</button>
+            </div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;padding-top:8px;border-top:1px solid #1a222e;">
+                <button class="btn-primary danger small" id="hDeleteSelectedBtn">🗑 Удалить выбранные</button>
+                <span style="color:#6a7a8e;font-size:12px;display:flex;align-items:center;" id="hSelectedCount">Выбрано: 0</span>
+            </div>
+            <div class="hint">📅 Выбери дату и время начала (только сегодня или прошлое)</div>
+        </div>
+
+        <div id="hDetail" style="display:none;">
+            <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:center;margin-bottom:12px;padding:8px 12px;background:#0a0e14;border-radius:12px;border:1px solid #1a222e;">
+                <span style="color:#6a7a8e;font-size:13px;">⏱ До конца 24-часового периода:</span>
+                <span class="timer-display" id="hDayTimer">--:--:--</span>
+                <span style="color:#6a7a8e;font-size:13px;margin-left:8px;">|</span>
+                <span style="color:#6a7a8e;font-size:13px;">📅 Всего дней:</span>
+                <span class="timer-display" id="hTimer">0</span>
+            </div>
+
+            <div class="stats-grid" id="hStats">
+                <div class="stat-item"><div class="number gold" id="hStreak">0</div><div class="label">🔥 Текущая серия</div></div>
+                <div class="stat-item"><div class="number green" id="hBestStreak">0</div><div class="label">🏆 Лучшая серия</div></div>
+                <div class="stat-item"><div class="number red" id="hFailed">0</div><div class="label">❌ Срывов</div></div>
+                <div class="stat-item"><div class="number blue" id="hTotal">0</div><div class="label">📅 Всего дней</div></div>
+            </div>
+
+            <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px;">
+                <button class="btn-primary danger" id="hFailBtn">💥 Сорвался</button>
+                <button class="btn-primary secondary" id="hShowFailsBtn">📋 История срывов</button>
+            </div>
+
+            <div id="hFailList" style="display:none;margin-bottom:12px;">
+                <div class="card">
+                    <div class="card-header">
+                        <span class="card-title">📋 История срывов</span>
+                        <button class="btn-sm blue" id="hHideFailsBtn">✕ Закрыть</button>
+                    </div>
+                    <div id="hFailListContent" class="fail-list"></div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <span class="card-title" id="hDetailTitle">📅 Календарь</span>
+                    <div>
+                        <button class="btn-sm" id="hPrevMonth">◀</button>
+                        <span style="margin:0 8px;color:#6a7a8e;" id="hMonthLabel"></span>
+                        <button class="btn-sm" id="hNextMonth">▶</button>
+                    </div>
+                </div>
+                <div class="calendar-grid" id="hCalendar"></div>
+                <div class="hint">🟢 Успешно. 🟡 Сегодня (в процессе). 🔴 Срыв.</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== СПОРТ ===== -->
+    <div id="sport" class="section">
+        <div class="card">
+            <div class="card-header">
+                <span class="card-title">💪 Мои упражнения</span>
+            </div>
+            <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:6px;justify-content:space-between;">
+                <div style="display:flex;gap:6px;flex-wrap:wrap;">
+                    <button class="btn-sm blue" id="sSelectAllBtn">✅ Выбрать все</button>
+                    <button class="btn-sm" id="sDeselectAllBtn">✖ Снять выбор</button>
+                </div>
+            </div>
+            <input type="text" class="list-search" id="sSearchInput" placeholder="🔎 Найти упражнение...">
+            <div class="sport-list-container" id="sportList"></div>
+            <div class="input-group">
+                <input type="text" id="sportInput" placeholder="Название упражнения...">
+                <button class="btn-primary" id="sportAddBtn">➕ Добавить</button>
+            </div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;padding-top:8px;border-top:1px solid #1a222e;">
+                <button class="btn-primary success small" id="sMarkDoneBtn">✅ Выполнить выбранные</button>
+                <button class="btn-primary danger small" id="sMarkUndoneBtn">↩️ Снять выполнение</button>
+                <button class="btn-primary secondary small" id="sMarkRestBtn">🛌 Отдых</button>
+                <button class="btn-primary danger small" id="sDeleteSelectedBtn">🗑 Удалить</button>
+                <span style="color:#6a7a8e;font-size:12px;display:flex;align-items:center;" id="sSelectedCount">Выбрано: 0</span>
+            </div>
+        </div>
+
+        <div id="sportDetail" style="display:none;" class="sport-detail-order">
+            <div class="card">
+                <div class="card-header">
+                    <span class="card-title" id="sportDetailTitle">💪 Название</span>
+                    <button class="btn-sm" id="sCloseDetailBtn">✕ Закрыть</button>
+                </div>
+                <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:center;margin-bottom:12px;padding:10px 14px;background:#0a0e14;border-radius:12px;border:1px solid #1a222e;">
+                    <span style="color:#6a7a8e;font-size:13px;">📊 Статус:</span>
+                    <span class="sport-status-badge" id="sDetailStatusBadge">⬜ Ожидает</span>
+                    <button class="btn-sm green" id="sDetailToggleBtn">✅ Сделать/снять</button>
+                    <button class="btn-sm blue" id="sDetailRestToggleBtn">🛌 Отдых/снять</button>
+                </div>
+                <div class="sport-stats-grid">
+                    <div class="stat-label"><span class="icon">🏋️</span><span>Подходы</span><input type="number" class="stat-input" id="sportSets" value="0" min="0"></div>
+                    <div class="stat-label"><span class="icon">🔁</span><span>Повторы</span><input type="number" class="stat-input" id="sportReps" value="0" min="0"></div>
+                    <div class="stat-label"><span class="icon">⚖️</span><span>Вес (кг)</span><input type="number" class="stat-input" id="sportWeight" value="0" min="0" step="0.5"></div>
+                    <div class="stat-label"><span class="icon">⏱️</span><span>Время (мин)</span><input type="number" class="stat-input" id="sportTime" value="0" min="0" step="0.5"></div>
+                    <div class="stat-label"><span class="icon">📏</span><span>Дист. (км)</span><input type="number" class="stat-input" id="sportDistance" value="0" min="0" step="0.1"></div>
+                </div>
+                <button class="btn-sm blue" id="sportStatsBtn" style="width:100%;">💾 Сохранить статистику</button>
+                <div id="sportRecords"></div>
+                <div style="border-top:1px solid #1a222e;padding-top:10px;margin-top:10px;">
+                    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px;">
+                        <span style="color:#6a7a8e;font-size:13px;">📝 Комментарии к дням:</span>
+                        <button class="btn-sm blue" id="sCommentToggleBtn">📝 Добавить/редактировать</button>
+                    </div>
+                    <div id="sCommentContainer" style="margin-top:8px;display:none;">
+                        <div class="comment-date-selector">
+                            <button class="date-nav-btn" id="sCommentPrevDay">◀</button>
+                            <input type="date" id="sCommentDate">
+                            <button class="date-nav-btn" id="sCommentNextDay">▶</button>
+                            <span class="date-label" id="sCommentDateLabel">Сегодня</span>
+                        </div>
+                        <textarea id="sCommentText" placeholder="Текст комментария (макс. 500 символов)..." maxlength="500" style="width:100%;min-height:80px;padding:8px 12px;border-radius:8px;border:1px solid #232b36;background:#0a0e14;color:#eef2f6;outline:none;resize:vertical;font-family:inherit;"></textarea>
+                        <div class="comment-char-counter" id="sCommentCounter">0 / 500</div>
+                        <div style="display:flex;gap:8px;margin-top:6px;">
+                            <button class="btn-sm blue" id="sCommentSaveBtn">💾 Сохранить</button>
+                            <button class="btn-sm danger" id="sCommentDeleteBtn">🗑 Удалить</button>
+                        </div>
+                    </div>
+                    <div id="sCommentDisplay" style="margin-top:6px;padding:8px 12px;background:#0a0e14;border-radius:8px;border:1px solid #1a222e;color:#8a94a6;font-size:13px;display:none;word-wrap:break-word;white-space:pre-wrap;max-height:100px;overflow-y:auto;"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <span class="card-title">📅 Календарь выполнения</span>
+                <div>
+                    <button class="btn-sm" id="sPrevMonth">◀</button>
+                    <span style="margin:0 8px;color:#6a7a8e;" id="sMonthLabel"></span>
+                    <button class="btn-sm" id="sNextMonth">▶</button>
+                </div>
+            </div>
+            <div class="calendar-grid" id="sCalendar"></div>
+            <div class="hint" id="sCalendarHint">💡 Чем зеленее день — тем больше выполнено. 🛌 Отдых не учитывается.</div>
+        </div>
+    </div>
+
+    <!-- ===== УСПЕХИ ===== -->
+    <div id="achievements" class="section">
+        <div class="card">
+            <div class="card-header">
+                <span class="card-title">🏆 Мои успехи</span>
+                <div style="display:flex;gap:6px;flex-wrap:wrap;">
+                    <button class="btn-sm blue" id="achSelectAllBtn">✅ Выбрать все</button>
+                    <button class="btn-sm" id="achDeselectAllBtn">✖ Снять выбор</button>
+                </div>
+            </div>
+            <div id="achievementsList" class="scroll-list"></div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;padding-top:8px;border-top:1px solid #1a222e;">
+                <button class="btn-primary danger small" id="achDeleteSelectedBtn">🗑 Удалить выбранные</button>
+                <span style="color:#6a7a8e;font-size:12px;display:flex;align-items:center;" id="achSelectedCount">Выбрано: 0</span>
+            </div>
+            <div class="input-group" style="margin-top:8px;">
+                <input type="text" id="achInput" placeholder="Название успеха...">
+                <input type="date" id="achDate">
+                <button class="btn-primary" id="achAddBtn">➕ Добавить</button>
+            </div>
+            <div class="hint">💡 Нажми на название, чтобы увидеть комментарий. Нажми на строку, чтобы выбрать её для удаления.</div>
+        </div>
+        <div class="card">
+            <div class="card-header">
+                <span class="card-title">📅 Календарь достижений</span>
+                <div>
+                    <button class="btn-sm" id="aPrevMonth">◀</button>
+                    <span style="margin:0 8px;color:#6a7a8e;" id="aMonthLabel"></span>
+                    <button class="btn-sm" id="aNextMonth">▶</button>
+                </div>
+            </div>
+            <div class="calendar-grid" id="aCalendar"></div>
+            <div class="hint">🏆 Зелёный — есть достижения</div>
+        </div>
+    </div>
+
+    <!-- ===== ЗАМЕТКИ ===== -->
+    <div id="notes" class="section">
+        <div class="card">
+            <div class="card-header">
+                <span class="card-title">✏️ Создать заметку</span>
+            </div>
+            <div class="input-group" style="flex-direction:column;">
+                <div style="display:flex;gap:8px;flex-wrap:wrap;width:100%;">
+                    <input type="date" id="noteDate" style="flex:0 0 auto;width:180px;">
+                    <input type="text" id="noteTitle" placeholder="Заголовок..." style="flex:1;">
+                </div>
+                <textarea id="noteText" placeholder="Текст заметки..." style="width:100%;min-height:80px;"></textarea>
+                <button class="btn-primary" id="noteAddBtn" style="align-self:flex-start;">📌 Сохранить</button>
+            </div>
+        </div>
+        <div class="card">
+            <div class="card-header">
+                <span class="card-title">📝 Все заметки</span>
+                <div style="display:flex;gap:6px;flex-wrap:wrap;">
+                    <button class="btn-sm blue" id="sortDate">По дате</button>
+                    <button class="btn-sm blue" id="sortName">По названию</button>
+                </div>
+            </div>
+            <div id="notesList"></div>
+        </div>
+        <div class="card">
+            <div class="card-header">
+                <span class="card-title">📅 Календарь заметок</span>
+                <div>
+                    <button class="btn-sm" id="nPrevMonth">◀</button>
+                    <span style="margin:0 8px;color:#6a7a8e;" id="nMonthLabel"></span>
+                    <button class="btn-sm" id="nNextMonth">▶</button>
+                </div>
+            </div>
+            <div class="calendar-grid" id="nCalendar"></div>
+            <div class="hint">🟡 Жёлтая полоса — есть заметка</div>
+        </div>
+    </div>
+
+    <!-- ===== СПИСОК ДЕЛ ===== -->
+    <div id="todo" class="section">
+        <div class="todo-layout">
+            <div class="todo-top">
+                <div class="card">
+                    <div class="card-header">
+                        <span class="card-title">📋 Шаблоны дел</span>
+                        <span style="color:#6a7a8e;font-size:12px;">Добавь дела, которые часто повторяются</span>
+                    </div>
+                    <div id="todoTemplates"></div>
+                    <div class="input-group">
+                        <input type="text" id="todoTemplateInput" placeholder="Новое дело в шаблон...">
+                        <button class="btn-primary small" id="todoTemplateAddBtn">➕</button>
+                    </div>
+                    <div class="hint">💡 Нажми на дело из шаблона, чтобы добавить именно его на выбранный день</div>
+                </div>
+                <div class="card" id="todoDayCard" style="display:none;">
+                    <div class="card-header">
+                        <span class="card-title" id="todoDayTitle">📋 Дела на день</span>
+                        <button class="btn-sm danger" id="todoCloseDayBtn">✕ Закрыть</button>
+                    </div>
+                    <div id="todoDayList" class="todo-day-list"></div>
+                    <div class="input-group" style="margin-top:8px;border-top:1px solid #1a222e;padding-top:8px;">
+                        <input type="text" id="todoDayInput" placeholder="Добавить дело...">
+                        <button class="btn-primary small" id="todoDayAddBtn">➕</button>
+                    </div>
+                    <div class="hint">💡 Нажми на дело, чтобы отметить/снять. Дела из шаблона добавляй по одному во вкладке "Шаблоны дел" выше.</div>
+                </div>
+            </div>
+            <div class="todo-bottom">
+                <div class="card">
+                    <div class="card-header">
+                        <span class="card-title">📅 Календарь дел</span>
+                        <div>
+                            <button class="btn-sm" id="todoPrevMonth">◀</button>
+                            <span style="margin:0 8px;color:#6a7a8e;" id="todoMonthLabel"></span>
+                            <button class="btn-sm" id="todoNextMonth">▶</button>
+                        </div>
+                    </div>
+                    <div class="calendar-grid" id="todoCalendar"></div>
+                    <div class="hint">💡 Цвет дня зависит от количества выполненных дел. Нажми на день, чтобы посмотреть/добавить дела</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== МАГАЗИН ===== -->
+    <div id="shop" class="section">
+        <div class="shop-hp-counter" id="shopHpCounter">
+            <span class="shop-hp-icon">💗</span>
+            <div class="shop-hp-info">
+                <span class="shop-hp-label">Баланс HP</span>
+                <span class="shop-hp-value" id="shopBalance">0</span>
+            </div>
+        </div>
+        <div class="card">
+            <div class="card-header">
+                <span class="card-title">🛒 Магазин</span>
+            </div>
+            <div class="shop-subtabs">
+                <button class="shop-tab-btn active" data-shoptab="upgrades">⚡ Прокачка</button>
+                <button class="shop-tab-btn" data-shoptab="cosmetics">🎨 Косметика</button>
+            </div>
+            <div id="shopUpgrades" class="shop-list"></div>
+            <div id="shopCosmetics" class="shop-list" style="display:none;"></div>
+        </div>
+    </div>
+
+    <!-- ===== ПРОФИЛЬ ===== -->
+    <div id="profile" class="section active">
+        <div class="card today-card" id="todayCard">
+            <div class="card-header">
+                <span class="card-title">📅 Сегодня</span>
+            </div>
+            <div id="todayWidget"></div>
+        </div>
+        <div class="level-card">
+            <div class="level-header">
+                <span class="level-title">⭐ Уровень</span>
+                <span class="level-number" id="profileLevel">1</span>
+            </div>
+            <div class="rank-title" id="profileRank">🌱 Новичок</div>
+            <div class="exp-bar-container">
+                <div class="exp-bar" id="profileExpBar" style="width:0%"></div>
+                <span class="exp-bar-text" id="profileExpText">0 / 100 XP</span>
+            </div>
+            <div class="exp-details">
+                <span>💰 Всего опыта: <strong id="profileTotalExp">0</strong></span>
+                <span>📊 До следующего уровня: <strong id="profileExpToNext">100</strong></span>
+            </div>
+        </div>
+        <div class="stats-dashboard">
+            <div class="stat-box"><div class="number gold" id="profileStreak">0</div><div class="label">🔥 Серия</div></div>
+            <div class="stat-box"><div class="number green" id="profileSportStreak">0</div><div class="label">💪 Спорт</div></div>
+            <div class="stat-box"><div class="number blue" id="profileHabitStreak">0</div><div class="label">🔄 Привычки</div></div>
+            <div class="stat-box"><div class="number purple" id="profileAchievements">0</div><div class="label">🏆 Успехи</div></div>
+            <div class="stat-box"><div class="number blue" id="profileNotes">0</div><div class="label">📝 Заметки</div></div>
+            <div class="stat-box"><div class="number gold" id="profileTodos">0</div><div class="label">✅ Дела</div></div>
+        </div>
+        <div class="card" id="profileHealthCard">
+            <div class="card-header">
+                <span class="card-title">❤️ Здоровье</span>
+                <span style="color:#6a7a8e;font-size:12px;" id="profileHealthStatus">Лёгкий режим</span>
+            </div>
+            <div id="healthWarning" style="display:none;" class="health-warning">⚠️ Здоровье на нуле! Пора восстановиться!</div>
+            <div class="health-gauge-row">
+                <div class="health-gauge" id="healthGauge" title="Нажми, чтобы узнать, как устроены сердца">
+                    <div class="health-gauge-inner">
+                        <span class="health-gauge-value" id="healthGaugeValue">0</span>
+                        <span class="health-gauge-label" id="healthGaugeLabel">HP на балансе</span>
+                    </div>
+                </div>
+                <div class="health-gauge-stats">
+                    <div class="hg-stat"><span class="hg-lbl">💰 Баланс HP</span><span class="hg-num" id="profileTotalHealthNum">0</span></div>
+                    <div class="hg-stat"><span class="hg-lbl">🏆 Лучшая серия</span><span class="hg-num" id="profileBestStreak">0</span></div>
+                    <div class="hg-stat"><span class="hg-lbl">📅 Дней в строгом</span><span class="hg-num" id="profileStrictDays">0</span></div>
+                    <div class="hg-stat"><span class="hg-lbl">🗓️ Выходных осталось</span><span class="hg-num" id="profileRestDaysLeft">-</span></div>
+                </div>
+                <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;">
+                    <button class="btn-sm blue" id="openHeartsInfoBtn">💗 Как зарабатывать сердца?</button>
+                    <button class="btn-sm blue" id="openHeartHistoryBtn">📜 История и статистика сердец</button>
+                </div>
+            </div>
+        </div>
+        <div class="card">
+            <div class="card-header">
+                <span class="card-title">📊 Статистика по вкладкам</span>
+            </div>
+            <div class="stats-tabs">
+                <button class="st-btn active" data-stat="all">📊 Все</button>
+                <button class="st-btn" data-stat="habits">🔄 Привычки</button>
+                <button class="st-btn" data-stat="sport">💪 Спорт</button>
+                <button class="st-btn" data-stat="achievements">🏆 Успехи</button>
+                <button class="st-btn" data-stat="notes">📝 Заметки</button>
+                <button class="st-btn" data-stat="todo">✅ Дела</button>
+            </div>
+            <div id="profileStatsChart"></div>
+            <div class="stats-section-divider">🔥 Тепловая карта активности</div>
+            <div id="profileHeatmap"></div>
+            <div class="heatmap-legend">
+                <span class="hl-item"><span class="hl-swatch hl-none"></span>нет данных</span>
+                <span class="hl-item"><span class="hl-swatch hl-zero"></span>0% выполнено</span>
+                <span class="hl-item"><span class="hl-swatch hl-mid"></span>частично</span>
+                <span class="hl-item"><span class="hl-swatch hl-full"></span>100%</span>
+            </div>
+        </div>
+        <div class="card">
+            <div class="card-header">
+                <span class="card-title">📈 Источники опыта</span>
+            </div>
+            <div id="profileExpSources"></div>
+        </div>
+    </div>
+
+    <!-- Модальное окно: стилизованный рассказ о том, как устроены сердца -->
+    <div class="modal-overlay" id="heartsInfoModal">
+        <div class="modal-content hearts-info-content">
+            <h2>💗 Как устроены сердца?</h2>
+            <div class="hearts-info-block">
+                <div class="hearts-info-icon">💰</div>
+                <div class="hearts-info-text">
+                    <div class="hearts-info-title">Банк HP — твоя валюта</div>
+                    <div class="hearts-info-desc">Копится за уровни и достижения. Не тратится сам по себе и никак не меняется в строгом режиме — это сбережения, а не жизнь персонажа.</div>
+                </div>
+            </div>
+            <div class="hearts-info-block">
+                <div class="hearts-info-icon">🔥</div>
+                <div class="hearts-info-text">
+                    <div class="hearts-info-title">HP строгого режима — ставка</div>
+                    <div class="hearts-info-desc">При входе в строгий режим ты ставишь часть банка. Это отдельная "жизнь" на время вызова — закончится HP, придётся выбирать: рискнуть снова или выйти.</div>
+                </div>
+            </div>
+            <div class="hearts-info-block earn">
+                <div class="hearts-info-icon">📈</div>
+                <div class="hearts-info-text">
+                    <div class="hearts-info-title">Как зарабатывать</div>
+                    <div class="hearts-info-desc">
+                        • Повышение уровня — пополняет банк HP<br>
+                        • Идеальный день в строгом режиме — +0.5 к текущему HP<br>
+                        • Серия из 5 идеальных дней подряд — максимум HP растёт, здоровье восстанавливается полностью
+                    </div>
+                </div>
+            </div>
+            <div class="hearts-info-block lose">
+                <div class="hearts-info-icon">📉</div>
+                <div class="hearts-info-text">
+                    <div class="hearts-info-title">Как терять</div>
+                    <div class="hearts-info-desc">
+                        • Срыв привычки — −2 HP за каждую<br>
+                        • Провален день тренировок — −1 HP<br>
+                        • Дела не выполнены — −1 HP (сделано ≥50%) или −3 HP (меньше 50% — совсем плохо)
+                    </div>
+                </div>
+            </div>
+            <div class="btn-group">
+                <button class="btn-primary" id="heartsInfoCloseBtn">✅ Понятно</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Модальное окно: история и статистика сердец строгого режима -->
+    <div class="modal-overlay" id="heartHistoryModal">
+        <div class="modal-content">
+            <h2>📜 История и статистика сердец</h2>
+            <div id="heartHistoryStats" class="heart-stats-grid"></div>
+            <div class="stats-section-divider" id="heartHistoryHighlight" style="display:none;"></div>
+            <div class="hh-filter-tabs">
+                <button class="hh-filter-btn active" data-hhfilter="all">📋 Всё</button>
+                <button class="hh-filter-btn" data-hhfilter="loss">💔 Потери</button>
+                <button class="hh-filter-btn" data-hhfilter="gain">❤️ Получено</button>
+            </div>
+            <div id="heartHistoryList" class="heart-history-list scroll-list"></div>
+            <div class="btn-group">
+                <button class="btn-primary" id="heartHistoryCloseBtn">✕ Закрыть</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Модальное окно настроек -->
+    <div class="modal-overlay" id="settingsModal">
+        <div class="modal-content">
+            <h2>⚙️ Настройки</h2>
+
+            <div class="settings-section">
+                <div class="settings-section-title">🎮 Режим сложности</div>
+                <div class="mode-toggle standalone">
+                    <button class="mode-btn active" data-mode="easy" id="sModeEasy">😊 Лёгкий</button>
+                    <button class="mode-btn" data-mode="strict" id="sModeStrict">🔥 Строгий</button>
+                </div>
+                <div class="hint" id="sModeHint">😊 Лёгкий режим: пропущенные дни не отмечаются</div>
+                <button class="btn-sm blue" id="settingsAboutModesBtn" style="margin-top:8px;">ℹ️ Плюсы и минусы режимов</button>
+                <label class="settings-tab-row" style="margin-top:10px;">
+                    <span>🎨 Менять оформление в строгом режиме</span>
+                    <input type="checkbox" id="strictThemeToggle" checked>
+                </label>
+            </div>
+
+            <p>Отключи вкладки, которыми не пользуешься, — они скроются из панели. «Профиль» отключить нельзя, это твоя главная вкладка.</p>
+            <div class="settings-tab-list" id="settingsTabList"></div>
+
+            <div class="settings-section" style="margin-top:14px;border-color:#4a2a2a;">
+                <div class="settings-section-title" style="color:#ff6b6b;">⚠️ Опасная зона</div>
+                <p style="font-size:12px;color:#8a94a6;margin:0 0 10px;">Полностью стирает весь прогресс: привычки, спорт, дела, заметки, достижения, уровень и покупки в магазине. Начнёшь с чистого листа.</p>
+                <button class="btn-sm danger" id="settingsResetBtn" style="width:100%;">🗑️ Обнулить всё и начать заново</button>
+            </div>
+
+            <div class="btn-group">
+                <button class="btn-primary" id="settingsCloseBtn">✕ Готово</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Модальное окно онбординга: выбор режима при первом запуске -->
+    <div class="modal-overlay" id="onboardingModal">
+        <div class="modal-content onboarding-content">
+            <h2>👋 Добро пожаловать!</h2>
+            <p>Выбери, в каком режиме хочешь начать. Это решение не окончательное — режим всегда можно сменить в настройках (⚙️), а строгий режим можно в любой момент отключить.</p>
+
+            <div class="onboarding-modes">
+                <div class="onboarding-mode-card selected" data-mode="easy" id="obEasyCard">
+                    <div class="onboarding-mode-icon">😊</div>
+                    <div class="onboarding-mode-title">Лёгкий режим</div>
+                    <div class="onboarding-mode-sub">Комфортный темп, без давления</div>
+                    <button class="onboarding-info-btn" data-mode="easy" type="button">ℹ️ Подробнее</button>
+                </div>
+                <div class="onboarding-mode-card" data-mode="strict" id="obStrictCard">
+                    <div class="onboarding-mode-icon">🔥</div>
+                    <div class="onboarding-mode-title">Строгий режим</div>
+                    <div class="onboarding-mode-sub">Вызов самому себе, на ставке HP</div>
+                    <button class="onboarding-info-btn" data-mode="strict" type="button">ℹ️ Подробнее</button>
+                </div>
+            </div>
+
+            <div class="onboarding-info-panel" id="onboardingInfoPanel" style="display:none;">
+                <div class="onboarding-info-header">
+                    <span id="onboardingInfoTitle"></span>
+                    <button id="onboardingInfoClose" type="button">✕</button>
+                </div>
+                <div class="onboarding-pros-cons">
+                    <div class="pc-col pc-pros">
+                        <div class="pc-title">✅ Плюсы</div>
+                        <ul id="onboardingProsList"></ul>
+                    </div>
+                    <div class="pc-col pc-cons">
+                        <div class="pc-title">⚠️ Минусы</div>
+                        <ul id="onboardingConsList"></ul>
+                    </div>
+                </div>
+            </div>
+
+            <div class="btn-group">
+                <button class="btn-primary success" id="onboardingConfirmBtn">✅ Продолжить</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Модальное окно для строгого режима -->
+    <div class="modal-overlay" id="strictModal">
+        <div class="modal-content">
+            <h2>🔥 Строгий режим</h2>
+            <p>Строгий режим — это вызов самому себе! Ты платишь очками здоровья за попытку.</p>
+            <div class="warning-box">
+                <strong>⚠️ Важно:</strong> Сколько HP ты выберешь — столько и будет списано с твоего баланса. В строгом режиме у тебя будет ровно столько HP.
+            </div>
+            <div id="strictHealthWarning" style="display:none;background:#2a1a1a;border:1px solid #5a2a2a;border-radius:10px;padding:10px 14px;margin-bottom:12px;color:#ff6b6b;font-size:13px;"></div>
+            <div class="form-group">
+                <label>❤️ Очки здоровья для вызова (макс. 12):</label>
+                <div class="hp-control">
+                    <button class="hp-btn danger" id="strictHpMinus">−</button>
+                    <input type="number" id="strictHealthInput" value="5" min="1" max="12">
+                    <button class="hp-btn success" id="strictHpPlus">+</button>
+                </div>
+                <div style="font-size:11px;color:#6a7a8e;margin-top:4px;">У тебя <span id="strictAvailableHp">0</span> HP. После активации они будут списаны.</div>
+            </div>
+            <div class="form-group">
+                <label>🗓️ Выходных дней в неделю:</label>
+                <input type="number" id="strictRestDaysInput" value="1" min="0" max="7">
+                <div style="font-size:11px;color:#6a7a8e;margin-top:4px;">Дни, когда все упражнения отмечены как отдых. Больше выходных можно купить в магазине.</div>
+            </div>
+            <div class="form-group">
+                <label>📅 Дата начала строгого режима:</label>
+                <input type="date" id="strictStartDateInput">
+                <div style="font-size:11px;color:#6a7a8e;margin-top:4px;">С этого дня начнётся отсчёт (сегодня или будущее)</div>
+            </div>
+            <div class="btn-group">
+                <button class="btn-primary danger" id="strictCancelBtn">✕ Отмена</button>
+                <button class="btn-primary success" id="strictConfirmBtn">✅ Начать вызов</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Модальное окно для смерти -->
+    <div class="modal-overlay" id="deathModal">
+        <div class="modal-content">
+            <h2>💀 Здоровье на нуле!</h2>
+            <p>Ты потерял все очки здоровья в строгом режиме. Нужно сделать выбор — просто закрыть это окно не получится.</p>
+            <div class="warning-box">
+                <strong>⚠️ Внимание:</strong> "Попробовать снова" откроет настройку нового вызова — придётся заново поставить HP из своего банка. "Лёгкий режим" — очки здоровья утрачены навсегда.
+            </div>
+            <div class="btn-group">
+                <button class="btn-primary success" id="deathRestartBtn">🔄 Попробовать снова</button>
+                <button class="btn-primary danger" id="deathEasyBtn">😊 Перейти в лёгкий режим</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Модальное окно для заметки -->
+<div id="noteModal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.8);z-index:1000;padding:20px;overflow-y:auto;">
+    <div style="max-width:600px;margin:40px auto;background:#151c26;border-radius:16px;border:1px solid #232b36;padding:20px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+            <span style="font-size:18px;font-weight:600;color:#eef2f6;" id="noteModalTitle">Заголовок</span>
+            <button onclick="closeNoteModal()" style="background:transparent;border:none;color:#6a7a8e;font-size:24px;cursor:pointer;">✕</button>
+        </div>
+        <div style="color:#6a7a8e;font-size:13px;margin-bottom:12px;" id="noteModalDate"></div>
+        <textarea id="noteModalText" style="width:100%;min-height:200px;padding:12px;border-radius:12px;border:2px solid #232b36;background:#0a0e14;color:#eef2f6;font-size:14px;outline:none;resize:vertical;font-family:inherit;margin-bottom:12px;"></textarea>
+        <div style="display:flex;gap:8px;">
+            <button class="btn-primary" onclick="saveNoteModal()">💾 Сохранить</button>
+            <button class="btn-primary secondary" onclick="closeNoteModal()">✕ Закрыть</button>
+            <button class="btn-sm danger" id="noteModalDeleteBtn" style="margin-left:auto;">🗑 Удалить</button>
+        </div>
+    </div>
+</div>
+
+<!-- Панель разработчика — скрыта, открывается вводом секретной последовательности символов -->
+<div id="devPanel" style="display:none;">
+    <div class="dev-panel-header">
+        <span>🛠️ Режим разработчика</span>
+        <button id="devPanelCloseBtn">✕</button>
+    </div>
+    <div class="dev-panel-body">
+        <button class="btn-sm blue" id="devAddBankHp">+50 банк HP</button>
+        <button class="btn-sm blue" id="devAddExp">+500 EXP</button>
+        <button class="btn-sm blue" id="devSkipDay">⏩ Прожить 1 день (строгий)</button>
+        <button class="btn-sm danger" id="devTriggerDeath">💀 Показать экран смерти</button>
+        <button class="btn-sm" id="devResetOnboarding">🔄 Сбросить онбординг</button>
+    </div>
+</div>
+
+
+<!--
+    Логика разбита на модули (см. папку js/), подключаются
+    обычными <script> (не type="module"), чтобы трекер продолжал
+    открываться напрямую из файла (file://) и внутри html2exe —
+    ES-модули там не грузятся из-за CORS-ограничений.
+-->
+<script src="js/state.js"></script>
+<script src="js/utils.js"></script>
+<script src="js/levelup.js"></script>
+<script src="js/exp-system.js"></script>
+<script src="js/health.js"></script>
+<script src="js/tabs.js"></script>
+<script src="js/settings.js"></script>
+<script src="js/habits.js"></script>
+<script src="js/sport.js"></script>
+<script src="js/achievements.js"></script>
+<script src="js/notes.js"></script>
+<script src="js/todos.js"></script>
+<script src="js/today.js"></script>
+<script src="js/stats.js"></script>
+<script src="js/shop.js"></script>
+<script src="js/analytics.js"></script>
+<script src="js/onboarding.js"></script>
+<script src="js/devmode.js"></script>
+<script src="js/init.js"></script>
+</body>
+</html>
